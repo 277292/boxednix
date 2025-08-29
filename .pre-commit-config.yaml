@@ -1,0 +1,20 @@
+repos:
+  - repo: local
+    hooks:
+      - id: reuse-annotate
+        name: reuse annotate
+        entry: reuse annotate --license GPL-3.0-only
+        language: system
+        files: \.rs$
+        stages: [pre-commit]
+      # - id: reuse-lint
+      #   name: reuse lint
+      #   entry: reuse lint-file
+      #   files: \.rs$
+      #   language: system
+      #   stages: [pre-commit]
+      - id: cargo-build
+        name: Cargo Build
+        entry: cargo build
+        language: system
+        pass_filenames: false

@@ -1,0 +1,37 @@
+[package]
+name = "boxednix"
+version = "0.1.0"
+edition = '2024'
+license = "GPL-3.0-only"
+authors = ["277292"]
+
+
+[[bin]]
+name = "bx"
+path = "src/main.rs"
+
+[dependencies]
+age = { version = "0.11.1", features = ["armor", "cli-common"] }
+anyhow = "1.0.98"
+bcrypt = "0.17.0"
+blake3 = "1.8.2"
+clap = { version = "4.5.41", features = ["derive"] }
+clap_complete = "4.5.55"
+directories-next = "2.0.0"
+hex = "0.4.3"
+hex-literal = "1.0.0"
+indoc = "2.0.6"
+log = "0.4.27"
+notify = "8.1.0"
+pbkdf2 = "0.12.2"
+resolve-path = "0.1.0"
+rnix = "0.12.0"
+rowan = "0.15.16"
+serde = { version = "1.0.219", features = ["derive"] }
+sha-crypt = "0.5.0"
+sha1 = "0.10.6"
+simplelog = "0.12.2"
+strum = "0.27.2"
+strum_macros = "0.27.2"
+tempfile = "3.20.0"
+toml = "0.9.2"
