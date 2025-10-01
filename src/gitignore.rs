@@ -10,9 +10,9 @@ pub struct Gitignore {
 }
 
 impl Gitignore {
-    pub fn new(dir: PathBuf) -> Self {
+    pub fn new(file: PathBuf) -> Self {
         Self {
-            target: dir.join(".gitignore"),
+            target: file,
             content: String::from("*\n!.gitifnore\n"),
         }
     }

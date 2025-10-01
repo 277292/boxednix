@@ -5,6 +5,7 @@ use blake3::Hash;
 use std::{
     ffi::OsString,
     path::{Path, PathBuf},
+    str::FromStr,
 };
 use tempfile::TempDir;
 
@@ -44,10 +45,12 @@ impl SessionFile {
     ) -> Result<Self> {
         let name = Self::file_name(&source)?;
         let target = Self::create_target(&source, &target_dir, &name)?;
+        let gitignore_file =
+            Self::create_target(&source, &target_dir, &OsString::from_str(".gitignore")?)?;
         let (path, dir) = Self::create_temp_file(&name)?;
 
         let gitignore = match gitignore {
-            config::Gitignore::Always => Some(Gitignore::new(target_dir)),
+            config::Gitignore::Always => Some(Gitignore::new(gitignore_file)),
             config::Gitignore::None => None,
         };
 
