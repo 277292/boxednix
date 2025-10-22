@@ -132,10 +132,10 @@ After saving, **boxedNix** will:
     nixosConfigurations.janes-server = nixpkgs.lib.nixosSystem {
       ...
       modules = [
+        ./configuration.nix
+
         ...
-        boxed.files
-        ...
-      ];
+      ] ++ (nixpkgs.lib.attrValues boxed.files);
     };
   };
 }
