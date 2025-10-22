@@ -1,22 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
-use anyhow::anyhow;
 use blake3::Hash;
 use std::{
     ffi::OsString,
     path::{Path, PathBuf},
-    str::FromStr,
 };
 use tempfile::TempDir;
 
 use super::session::WatcherContext;
 use crate::{
-    config,
     editor::EditorContext,
     file_io::{
         DecryptionContext, EncryptionContext, GenerationContext, ReadingContext, WritingContext,
     },
-    gitignore::Gitignore,
     redact, Result,
 };
 
@@ -27,32 +23,26 @@ pub struct SessionFile {
     content: Vec<u8>,
     source: PathBuf,
     target: PathBuf,
-    gitignore: Option<Gitignore>,
     identity: PathBuf,
     recipients: Vec<PathBuf>,
     recipients_files: Vec<PathBuf>,
+    // TODO: maybe just for now
+    flake_input: Option<String>,
 }
 
 impl SessionFile {
     pub fn new(
         source: PathBuf,
         template: Vec<u8>,
+        file_name: OsString,
         target_dir: PathBuf,
-        gitignore: config::Gitignore,
         identity: PathBuf,
         recipients: Vec<PathBuf>,
         recipients_files: Vec<PathBuf>,
+        flake_input: Option<String>,
     ) -> Result<Self> {
-        let name = Self::file_name(&source)?;
-        let target = Self::create_target(&source, &target_dir, &name)?;
-        let gitignore_file =
-            Self::create_target(&source, &target_dir, &OsString::from_str(".gitignore")?)?;
-        let (path, dir) = Self::create_temp_file(&name)?;
-
-        let gitignore = match gitignore {
-            config::Gitignore::Always => Some(Gitignore::new(gitignore_file)),
-            config::Gitignore::None => None,
-        };
+        let (path, dir) = Self::create_temp_file(&file_name)?;
+        let target = target_dir.join(file_name);
 
         Ok(Self {
             path,
@@ -61,10 +51,10 @@ impl SessionFile {
             content: template,
             source,
             target,
-            gitignore,
             identity,
             recipients,
             recipients_files,
+            flake_input,
         })
     }
 
@@ -80,15 +70,8 @@ impl SessionFile {
         other.iter().any(|path| path == &self.path)
     }
 
-    pub fn gitignore(&self) -> Option<&Gitignore> {
-        self.gitignore.as_ref()
-    }
-
-    fn create_target(source: &Path, target_dir: &Path, file_name: &OsString) -> Result<PathBuf> {
-        source
-            .parent()
-            .map(|root| root.join(target_dir).join(&file_name))
-            .ok_or(anyhow!("source has no parent: {:?}", source))
+    pub fn flake_input(&self) -> Option<String> {
+        self.flake_input.to_owned()
     }
 
     fn create_temp_file(name: &OsString) -> Result<(PathBuf, TempDir)> {
@@ -96,16 +79,6 @@ impl SessionFile {
         let path = dir.path().join(&name);
 
         Ok((path, dir))
-    }
-
-    fn file_name(path: &Path) -> Result<OsString> {
-        let mut stem = path
-            .file_stem()
-            .map(OsString::from)
-            .ok_or(anyhow!("path has not stem, {:?}", path))?;
-
-        stem.push(".nix");
-        Ok(stem)
     }
 }
 

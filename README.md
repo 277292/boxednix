@@ -1,27 +1,19 @@
 # boxedNix
-Encrypts and automaticlly hashes sensitive parts of your Nix configuration.
+Encrypts and automatically hashes sensitive parts of your Nix configuration.
 
 
-## How it's works
+## How it works
 - **boxedNix** opens or creates an [age](https://age-encryption.org/v1)-encrypted file.
 - It launches your preferred editor with the decrypted contents of the file.
 - Sensitive data (e.g. passwords) can be marked with keywords such as `bcrypt`, `sha512`, `psk`.
 - On save:
   - Changes are re-encrypted into the source file.
   - A new `.nix` file is generated, with marked secrets replaced by their hashes.
-- The generated `.nix` file can be imported as usual via `import ./.boxednix/<file>.nix`.
+<!-- - The generated `.nix` file can be imported as usual via `import ./.boxednix/<file>.nix`. -->
 
 See [Usage](./README.md#-usage) for a more detailed example.
 
-**boxedNix** is built on the [rage](https://github.com/str4d/rage) implementaion of *age* and the [rnix-parser](https://github.com/nix-community/rnix-parser).
-
-
-
-
-## Motivation
-The idea behind **boxedNix** is to lower the barrier to using a tool for secret management in the first place.
-Tools like [sops-nix](https://github.com/Mic92/sops-nix) or [agenix](https://github.com/ryantm/agenix) are excellent at providing a strong security guarantess. However, convenience and security often get in each other’s way.
-**boxedNix** aims to strike a balance: convenient to use, while still offering a reasonable level fo security.
+**boxedNix** is built on the [rage](https://github.com/str4d/rage) implementation of *age* and the [rnix-parser](https://github.com/nix-community/rnix-parser).
 
 > [!warning]
 > **boxedNix** is in an early development stage and has not been thoroughly tested.
@@ -78,19 +70,18 @@ cd /path/to/your/configuration
 
 Create a new configuration:
 ```bash
-bx create janes-system
+bx new janes-system
 ```
 
 This will:  
 - Create a `boxednix.toml` file:  
   ```toml
   identity = "~/.config/boxednix/janes-system"
+  generated_dir = "~/.config/boxednix/generated/<project_root_name>"
 
-  [generate]
-  dir = ".boxednix"
-  gitignore = "Always"
   ```
-- Generate an *age* key pair in `~/.config/boxednix/janes-system` (if it does not exist).  
+- Generate an *age* key pair in `~/.config/boxednix/janes-system` (if it does not exist).
+- Generate a *flake* at `~/.config/boxednix/generated/<project_root_name>` to collect all generated files.
 
 💡 **Tip:** Use `-p` to protect the key with a passphrase
 
@@ -119,7 +110,7 @@ bx mail-accs.age
 
 After saving, **boxedNix** will:
 1. Encrypt the file back to `mail-accs.age`.
-2. Generate `.boxednix/mail-accs.nix`:
+2. Generate `~/.config/boxednix/generated/<project_root_name>/mail-accs.nix`:
 ```nix
 {
   mailserver.loginAccounts = {
@@ -131,12 +122,24 @@ After saving, **boxedNix** will:
 
 ### 3️⃣ Import the generated file into Nix
 ```nix
-{config, ...}: {
-  imports = [./.boxednix/mail-accs.nix];
-  mailserver.enable = true;
+{
+  inputs = {
+    boxed.url = "path:/home/<user>/.config/boxednix/generated/<project_root_name>";
+  };
+
+
+  outputs = {self, nixpkgs, boxednix, boxed,...}: {
+    nixosConfigurations.janes-server = nixpkgs.lib.nixosSystem {
+      ...
+      modules = [
+        ...
+        boxed.files
+        ...
+      ];
+    };
+  };
 }
 ```
-
 
 ### 4️⃣ Alternative: Writing attribute sets instead of modules
 You don’t have to write full Nix modules. Instead, you can define attribute sets to organize related secrets or configurations.
@@ -159,11 +162,11 @@ You don’t have to write full Nix modules. Instead, you can define attribute se
 
 Import:
 ```nix
-outputs = {self, nixpkgs, ...}: {
+outputs = {self, nixpkgs, boxed,...}: {
   nixosConfigurations.janes-serverA = nixpkgs.lib.nixosSystem {
     ...
     specialArgs = {
-      boxed = import ./.boxednix/keys.nix;
+      boxed = import boxed.files."keys.nix";
     };
   };
 }
@@ -212,7 +215,7 @@ Using functions like this will not work, and the key will appear in plaintext in
 
 ## 🔒 Security notes
 - Hashed secrets are stored in the Nix store.
-- The generated `.nix` files are stored in a directory with a `.gitignore` that excludes its contents to prevent accidental commits. This is automatically created by **boxedNix** if configured accordingly, but you must ensure that the files do not accidentally get committed to your repository.
+- The default location for generated files is `~/.config/boxednix/generated/`. You can choose a different location, including the project root, but be aware that generating files directly in the project root will place them in your Git repository and may risk leaking sensitive information.
 
 ## 🙌 Contributing
 Feel free to open an issue or submit a pull request if you encounter a problem or have an idea for improvement — contributions related to **boxedNix** are very welcome.

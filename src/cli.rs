@@ -30,7 +30,7 @@ struct Cli {
     #[arg(trailing_var_arg = true, requires = "editor")]
     pub editor_args: Vec<String>,
 
-    #[arg(short, long, global = true)]
+    #[arg(long, global = true)]
     pub debug: bool,
 
     #[command(subcommand)]
@@ -41,6 +41,9 @@ struct Cli {
 enum Sub {
     New {
         identity: PathBuf,
+
+        #[arg(short, long)]
+        dir: Option<PathBuf>,
 
         #[arg(short, long)]
         passphrase: bool,
@@ -90,11 +93,18 @@ fn handle_cli(cli: Cli) -> Result<()> {
             }
             Sub::New {
                 identity,
+                dir,
                 recipients,
                 recipients_files,
                 passphrase,
             } => {
-                return boxednix::create_config(identity, passphrase, recipients, recipients_files)
+                return boxednix::create_config(
+                    identity,
+                    dir,
+                    passphrase,
+                    recipients,
+                    recipients_files,
+                )
             }
             Sub::Copy {
                 source: _,

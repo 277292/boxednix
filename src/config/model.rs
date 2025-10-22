@@ -2,10 +2,19 @@
 
 use resolve_path::PathResolveExt;
 use serde::{Deserialize, Deserializer, Serialize};
-use std::path::PathBuf;
+use std::{ffi::OsString, path::PathBuf};
+
+pub struct Config {
+    pub identity: PathBuf,
+    pub recipients: Vec<PathBuf>,
+    pub recipients_files: Vec<PathBuf>,
+    pub file_name: OsString,
+    pub target_dir: PathBuf,
+    pub flake_input: Option<String>,
+}
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Config {
+pub struct TomlConfig {
     #[serde(deserialize_with = "deserialize_pathbuf_resolve")]
     pub identity: PathBuf,
 
@@ -19,13 +28,13 @@ pub struct Config {
     #[serde(default = "empty_pathbuf_vec", skip_serializing_if = "Vec::is_empty")]
     pub recipients_files: Vec<PathBuf>,
 
-    pub generate: Generate,
+    pub generated_dir: PathBuf,
+    pub update_flake_input: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Generate {
     pub dir: PathBuf,
-    pub gitignore: Gitignore,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
